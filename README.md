@@ -9,3 +9,5 @@ Potentially useful links
 - [RaspberryPi resources](https://www.raspberrypi.org/resources/)
 
 - [Cambridge ARM/RaspberryPi assembly tutorial](http://www.cl.cam.ac.uk/projects/raspberrypi/tutorials/os/index.html)
+
+for toolchain instructions [see this](http://www.cl.cam.ac.uk/projects/raspberrypi/tutorials/os/downloads.html)
