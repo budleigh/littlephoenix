@@ -40,7 +40,7 @@
 /** GPIO Register set */
 volatile unsigned int* gpio = (unsigned int*)GPIO_BASE;
 
-/* 
+
 // following cloned from RPi.GPIO-0.6.3 python GPIO lib
 
 #define FSEL_OFFSET                 0   // 0x0000
@@ -53,6 +53,11 @@ volatile unsigned int* gpio = (unsigned int*)GPIO_BASE;
 
 #define HIGH 1
 #define LOW  0
+
+void short_wait() {
+	for (int i = 0; i < 50; i++)
+		;
+}
 
 void output_gpio(int gpio_chan, int value)
 {
@@ -87,7 +92,7 @@ void setup_gpio(int gpio_chan, int direction)
 
 typedef unsigned char uint8;
 
-uint8 pixels[7][4];
+uint8 pixels[NUM_PIXELS][4];
 
 void init_blinkt() {
 	// initialize blinkt pixel array
@@ -131,7 +136,7 @@ void _eof() {
 
 void _sof() {
     output_gpio(DAT, 0);
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < 36; i++) {
         output_gpio(CLK, 1);
         output_gpio(CLK, 0);
     }
@@ -149,16 +154,16 @@ void show() {
     _eof();
 }
 
-void set_pixel(uint8 pixel, uint8 r, uint8 g, uint8 b, float brightness) {
+void set_pixel(uint8 pixel, uint8 r, uint8 g, uint8 b, uint8 brightness) {
     // set the RGB value, and optionally brightness, of a single pixel
 	// brightness 0.0 to 1.0, normal 0.2
-	pixels[pixel][3] = (int)(31.0 * brightness) & 0x1f;
+	pixels[pixel][3] = brightness & 0x1f; // (int)(31.0 * brightness) & 0x1f;
 	pixels[pixel][0] = r;
 	pixels[pixel][1] = g;
 	pixels[pixel][2] = b;
 }
 
-void set_all(uint8 r, uint8 g, uint8 b, float brightness) {
+void set_all(uint8 r, uint8 g, uint8 b, uint8 brightness) {
     // Set the RGB value and optionally brightness of all pixels
     for (int i = 0; i < NUM_PIXELS; i++) 
     	set_pixel(i, r, g, b, brightness);
@@ -171,13 +176,13 @@ void solid_colors() {
 	while (1) {
 		switch (step) {
 			case 0:
-				set_all(128, 0, 0, 0.4);
+				set_all(128, 0, 0, 7);
 				break;
 			case 1:
-				set_all(0, 128, 0, 0.4);
+				set_all(0, 128, 0, 7);
 				break;
 			case 2:
-				set_all(0, 0, 128, 0.4);
+				set_all(0, 0, 128, 7);
 				break;
 		}
 		
@@ -190,44 +195,69 @@ void solid_colors() {
 	}
 }
 
-*/
+// simple binary counter ...
+
+void counter() {
+	uint8 ctr = 0;
+	while (1) {
+		uint8 val = ctr;
+		for (uint8 i = 0; i < NUM_PIXELS; i++) {
+			if (val & 0x01)
+				set_pixel(i, 128, 0, 0, 5);
+			else
+				set_pixel(i, 0, 0, 0, 0);
+			val >>= 1;
+		}
+		show();
+		// wait a bit
+		for (int j = 0; j < 50000; j++)
+			;
+		ctr += 1;
+	}
+}
+
 
 /** Main function - we'll never return from here */
 void kernel_main(unsigned int r0, unsigned int r1, unsigned int atags)
 {
-	//init_blinkt();
-	//solid_colors();
-
-
-    int loop;
-    unsigned int* counters;
-
-    /* Set the LED GPIO pin to an output to drive the LED */
-    gpio[LED_GPFSEL] |= ( 1 << LED_GPFBIT );
-
-    /* Allocate a block of memory for counters */
-    counters = malloc( 1024 * sizeof( unsigned int ) );
-
-    /* Failed to allocate memory! */
-    if( counters == NULL )
-        while(1) {     LED_ON();/* Trap here */ }
-
-    for( loop=0; loop<1024; loop++ )
-        counters[loop] = 0;
-
-    /* Never exit as there is no OS to exit to! */
-    while(1)
-    {
-        /* Light the LED */
-        LED_ON();
-
-        for(counters[0] = 0; counters[0] < 500000; counters[0]++)
-            ;
-
-        /* Set the GPIO16 output low ( Turn OK LED on )*/
-        LED_OFF();
-
-        for(counters[1] = 0; counters[1] < 500000; counters[1]++)
-            ;
-    }
+	init_blinkt();
+//	solid_colors();
+	counter();
+	
+// 
+//     int loop;
+//     unsigned int* counters;
+// 
+//     /* Set the LED GPIO pin to an output to drive the LED */
+//     // gpio[LED_GPFSEL] |= ( 1 << LED_GPFBIT );
+//     setup_gpio(47, OUTPUT);
+// 
+// 
+//     /* Allocate a block of memory for counters */
+//     counters = malloc( 1024 * sizeof( unsigned int ) );
+// 
+//     /* Failed to allocate memory! */
+//     if( counters == NULL )
+//         while(1) {     LED_ON();/* Trap here */ }
+// 
+//     for( loop=0; loop<1024; loop++ )
+//         counters[loop] = 0;
+// 
+//     /* Never exit as there is no OS to exit to! */
+//     while(1)
+//     {
+//         /* Light the LED */
+//         //LED_ON();
+//         output_gpio(47, 0);
+// 
+//         for(counters[0] = 0; counters[0] < 500000; counters[0]++)
+//             ;
+// 
+//         /* Set the GPIO16 output low ( Turn OK LED on )*/
+//         //LED_OFF();
+//         output_gpio(47, 1);
+// 
+//         for(counters[1] = 0; counters[1] < 500000; counters[1]++)
+//             ;
+//     }
 }
